@@ -1,3 +1,10 @@
+/**
+* Author:    Andrea Casalino
+* Created:   06.08.2020
+*
+* report any bug to andrecasa91@gmail.com.
+**/
+
 #include "Thread_pool.h"
 using namespace std;
 

@@ -1,3 +1,10 @@
+/**
+* Author:    Andrea Casalino
+* Created:   06.08.2020
+*
+* report any bug to andrecasa91@gmail.com.
+**/
+
 #ifndef __THREAD_POOL_H__
 #define __THREAD_POOL_H__
 
