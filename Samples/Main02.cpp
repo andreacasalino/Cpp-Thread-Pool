@@ -1,16 +1,16 @@
 /**
 * Author:    Andrea Casalino
-* Created:   06.08.2020
+* Created:   25.09.2020
 *
 * report any bug to andrecasa91@gmail.com.
 **/
 
-#include "../src/Thread_pool.h"
+#include <EquiPool.h>
 
 #include <chrono>
 #include <iostream>
 #include <fstream>
-#include <list>
+#include <vector>
 using namespace std;
 
 #define NUMBER_OF_ARRAYS 50
@@ -25,6 +25,7 @@ public:
         for(size_t k=0; k<N_samples; ++k) this->values[k] = -10 + rand() % 20;
     };
     ~Mean_computator(){ delete[] this->values; };
+    Mean_computator(const Mean_computator& ) = delete;
 
     void operator()(){
         this->Mean = 0.f;
@@ -48,6 +49,8 @@ int main(){
         work_packages.emplace_back(ARRAY_SIZE);
     }
 
+    vector<float> meanSerial;
+
 //serial version (may take a while)
 {
     auto tic = chrono::steady_clock::now();
@@ -57,11 +60,9 @@ int main(){
     auto toc = chrono::steady_clock::now();
     cout << endl << "Elapsed time with a single thread: " << chrono::duration_cast<chrono::milliseconds>(toc- tic).count() << endl;
 
-    // print the computed means in a textual file
-    ofstream f("Results");
-    f << "means computed with the serial version : ";
-    for(auto it=work_packages.begin(); it!=work_packages.end(); ++it) f << " " << it->get_computed_mean();
-    f.close();
+    // save the results in order to compare it later with the ones obtained with the pool of threads
+    meanSerial.reserve(work_packages.size());
+    for (auto it = work_packages.begin(); it != work_packages.end(); ++it) meanSerial.push_back(it->get_computed_mean());
 
 }
 
@@ -69,17 +70,21 @@ int main(){
 {
     auto tic = chrono::steady_clock::now();
 
-    Pool_equipriority pool(POOL_SIZE); //default polling time assumed. After construction the threads are already spawned and ready to process work package
-    for(auto it=work_packages.begin(); it!=work_packages.end(); ++it) pool.push(&(*it), false); // false is passed to instruct the pool to not destroy the functor after having processed it
-    pool.await(); //wait for the pool to terminate the tasks
+    thpl::equi::Pool pool(POOL_SIZE); //After construction the threads are already spawned and ready to process work package
+    for (list<Mean_computator>::iterator it = work_packages.begin(); it != work_packages.end(); ++it) pool.push([it]() { (*it)(); });
+    pool.wait(); //wait for the pool to terminate the tasks
 
     auto toc = chrono::steady_clock::now();
     cout << endl << "Elapsed time with the thread pool: " << chrono::duration_cast<chrono::milliseconds>(toc- tic).count() << endl;
 
     // print the computed means in the same file. Compare it to convince yourself that the pool of threads did the same computations of the serial version.
-    ofstream f("Results", ios_base::app);
-    f << "\nmeans computed with the thread pool     : ";
-    for(auto it=work_packages.begin(); it!=work_packages.end(); ++it) f << " " << it->get_computed_mean();
+    ofstream f("Results");
+    f << "serial   parallel\n";
+    size_t r = 0;
+    for (auto it = work_packages.begin(); it != work_packages.end(); ++it) {
+        f << meanSerial[r] << "      " << it->get_computed_mean() << endl;
+        ++r;
+    }
     f.close();
 }
 
