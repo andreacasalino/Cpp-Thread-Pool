@@ -43,15 +43,10 @@ namespace thpl{
 
         IPool(const std::size_t& poolSize, std::unique_ptr<QueueStrategy> queue);
 
-        // called in deriving class after inserting the task in the queue
-        void newTaskReady();
+        std::atomic<std::size_t> remainingTasks;
     private:
         std::atomic<bool> poolLife;
         std::list<std::thread> pool;
-
-        std::atomic<std::size_t> remainingTasks;
-
-        std::pair<std::mutex, std::condition_variable> newTaskReadyBarrier;
     };
 
 }

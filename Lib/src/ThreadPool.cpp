@@ -34,11 +34,6 @@ namespace thpl{
                         task();
                         --this->remainingTasks;
                     }
-                    else {
-                        // wait till at least one task is inserted or destructor is called
-                        std::unique_lock<std::mutex> lk(this->newTaskReadyBarrier.first);
-                        this->newTaskReadyBarrier.second.wait_for(lk, std::chrono::seconds(1));
-                    }
                 }
         });
 
@@ -46,11 +41,6 @@ namespace thpl{
         while (true) {
             if (spawnedReady == poolSize) break;
         }
-    }
-
-    void IPool::newTaskReady(){
-        ++this->remainingTasks;
-        this->newTaskReadyBarrier.second.notify_one();
     }
 
     void IPool::wait(){
@@ -61,7 +51,6 @@ namespace thpl{
 
     IPool::~IPool(){
         this->poolLife = false;
-        this->newTaskReadyBarrier.second.notify_all();
         std::for_each(this->pool.begin(), this->pool.end(), [](std::thread& t) { t.join(); });
     }
 
