@@ -36,6 +36,11 @@ namespace thpl{
 
         IPool(const IPool&) = delete;
         void operator=(const IPool&) = delete;
+		
+		/**
+         * \brief Returns the size of the pool
+         */
+		inline std::size_t size() const { return this->pool.size(); };
     protected:
         class QueueStrategy;
         std::unique_ptr<QueueStrategy> queue;
