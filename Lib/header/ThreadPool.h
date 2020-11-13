@@ -52,8 +52,6 @@ namespace thpl{
         std::atomic<std::size_t> remainingTasks;
 
         std::pair<std::mutex, std::condition_variable> newTaskReadyBarrier;
-
-        std::pair<std::mutex, std::condition_variable> oneTaskFinishedBarrier;
     };
 
 }

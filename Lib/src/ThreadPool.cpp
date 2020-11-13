@@ -16,9 +16,12 @@ namespace thpl{
         , remainingTasks(0) {
         if(poolSize == 0) throw std::runtime_error("invalid pool size");
 
+        std::atomic<std::size_t> spawnedReady = 0;
+
         //spawn all the threads in the pool
         for(std::size_t k=0; k< poolSize; ++k)
-            this->pool.emplace_back([this]() {
+            this->pool.emplace_back([this, &spawnedReady]() {
+                ++spawnedReady;
                 bool isEmpty;
                 while (this->poolLife) {
                     std::function<void(void)> task;
@@ -30,7 +33,6 @@ namespace thpl{
                     if (!isEmpty) {
                         task();
                         --this->remainingTasks;
-                        this->oneTaskFinishedBarrier.second.notify_all();
                     }
                     else {
                         // wait till at least one task is inserted or destructor is called
@@ -39,6 +41,11 @@ namespace thpl{
                     }
                 }
         });
+
+        // make sure all the threads were spawned before returning
+        while (true) {
+            if (spawnedReady == poolSize) break;
+        }
     }
 
     void IPool::newTaskReady(){
@@ -48,13 +55,8 @@ namespace thpl{
 
     void IPool::wait(){
         while (true) {
-            if(this->remainingTasks == 0) break;
-
-            // wait for another 1 second that least one thread notify finish task
-            std::unique_lock<std::mutex> lk(this->oneTaskFinishedBarrier.first);
-            this->oneTaskFinishedBarrier.second.wait_for(lk, std::chrono::seconds(1));
+            if (this->remainingTasks == 0) return;
         }
-        
     }
 
     IPool::~IPool(){
