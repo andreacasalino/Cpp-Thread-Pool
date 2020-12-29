@@ -1,2 +1,0 @@
-/usr/bin/ar qc libThread-Pool.a CMakeFiles/Thread-Pool.dir/src/EquiPool.cpp.o CMakeFiles/Thread-Pool.dir/src/PrioritizedPool.cpp.o CMakeFiles/Thread-Pool.dir/src/ThreadPool.cpp.o
-/usr/bin/ranlib libThread-Pool.a
