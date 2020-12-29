@@ -1,4 +1,4 @@
-This package is a C++ implementation of the [thread pooling](https://en.wikipedia.org/wiki/Thread_pool) pattern.
+This package is a C++ implementation of the [thread pool](https://en.wikipedia.org/wiki/Thread_pool) pattern.
 
 There are essentially 2 ways to use this library:
 
