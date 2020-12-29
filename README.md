@@ -2,8 +2,8 @@ This package is a C++ implementation of the [thread pool](https://en.wikipedia.o
 
 There are essentially 2 ways to use this library:
 
- * use ./Lib/header/EquiPool.h to create and control a standard thread pool, where tasks are executed with a FIFO logic
- * use ./Lib/header/PrioritizedPool.h to create and control a prioritized thread pool, where tasks that are externally feeded, are ordered according to a priority level
+ * use ./Lib/header/**EquiPool.h** to create and control a standard thread pool, where tasks are executed with a FIFO logic
+ * use ./Lib/header/**PrioritizedPool.h** to create and control a prioritized thread pool, where tasks that are externally feeded, are ordered according to a priority level
 
 Check the comments in the headers for more info.
 
