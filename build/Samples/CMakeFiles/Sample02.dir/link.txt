@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wno-unknown-pragmas -rdynamic CMakeFiles/Sample02.dir/Main02.cpp.o -o Sample02  ../Lib/libThread-Pool.a -lpthread 

@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../Lib/header/EquiPool.h
+ThreadPool.h
+../Lib/header/ThreadPool.h
+
+../Lib/header/ThreadPool.h
+functional
+-
+list
+-
+thread
+-
+atomic
+-
+condition_variable
+-
+memory
+-
+
+/home/andrea/Scrivania/Thread-Pool/Samples/Main03.cpp
+EquiPool.h
+-
+chrono
+-
+iostream
+-
+random
+-
+
