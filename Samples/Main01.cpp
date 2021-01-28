@@ -13,6 +13,7 @@ using namespace std;
 #define SLEEP_TIME 200
 #define TASK_NUMBER 50
 
+// make the current wait for a little bit
 function<void(void)> make_wait(){
     return [](){ 
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME)); 
@@ -31,7 +32,7 @@ int main(){
     cout << endl << "Elapsed time with a single thread: " << chrono::duration_cast<chrono::milliseconds>(toc- tic).count() << endl;
 }
 
-//serial version
+//thread pool version
 {
     auto tic = chrono::steady_clock::now();
 
