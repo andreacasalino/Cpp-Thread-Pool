@@ -2,9 +2,15 @@ set(PROJECT_SHORTNAME "Thread-Pool")
 project(${PROJECT_SHORTNAME} VERSION ${VERSION} LANGUAGES CXX)
 string(REPLACE - _ COMPONENT_NAME ${PROJECT_NAME})
 
-CollectSourceFiles(${CMAKE_CURRENT_SOURCE_DIR} SOURCES)
-
-GroupSources(${CMAKE_CURRENT_SOURCE_DIR})
+list(APPEND SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/header/EquiPool.h
+	${CMAKE_CURRENT_SOURCE_DIR}/header/PrioritizedPool.h
+	${CMAKE_CURRENT_SOURCE_DIR}/header/ThreadPool.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/EquiPool.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/PrioritizedPool.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/ThreadPool.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/QueueStrategy.h
+)
 
 if(LIB_OPT)
 	add_library(${PROJECT_NAME} SHARED ${SOURCES})
