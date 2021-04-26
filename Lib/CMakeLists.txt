@@ -10,21 +10,25 @@ list(APPEND SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/QueueStrategy.h
 )
 
-if(LIB_OPT)
-	add_library(${PROJECT_SHORTNAME} SHARED ${SOURCES})
-else()
+if (WIN32)
 	add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
+else()
+	if(LIB_OPT)
+		add_library(${PROJECT_SHORTNAME} SHARED ${SOURCES})
+		set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+	else()
+		add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
+	endif()
 endif()
-add_library(thpl::${PROJECT_SHORTNAME} ALIAS ${PROJECT_SHORTNAME})
-
-target_compile_features(${PROJECT_SHORTNAME}
-    PUBLIC cxx_auto_type
-    PRIVATE cxx_variadic_templates
-)
 
 target_include_directories(${PROJECT_SHORTNAME}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/header>
+)
+
+target_compile_features(${PROJECT_SHORTNAME}
+    PUBLIC cxx_auto_type
+    PRIVATE cxx_variadic_templates
 )
 
 find_package(Threads)
@@ -32,4 +36,7 @@ target_link_libraries(${PROJECT_SHORTNAME}
     PRIVATE
 	${CMAKE_THREAD_LIBS_INIT}      
 )
+
+install(TARGETS ${PROJECT_SHORTNAME})
+install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/header/ DESTINATION include/${PROJECT_SHORTNAME} FILES_MATCHING PATTERN "*.h*")
 
