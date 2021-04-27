@@ -10,15 +10,11 @@ list(APPEND SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/QueueStrategy.h
 )
 
-if (WIN32)
-	add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
+if(LIB_OPT)
+	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+	add_library(${PROJECT_SHORTNAME} SHARED ${SOURCES})
 else()
-	if(LIB_OPT)
-		add_library(${PROJECT_SHORTNAME} SHARED ${SOURCES})
-		set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-	else()
-		add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
-	endif()
+	add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
 endif()
 
 target_include_directories(${PROJECT_SHORTNAME}
