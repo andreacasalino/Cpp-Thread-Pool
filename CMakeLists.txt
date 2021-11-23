@@ -8,4 +8,7 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 project(Thread-Pool-Core)
 add_subdirectory(Lib)
 
-add_subdirectory(Samples)
+option(BUILD_Thread_Pool_SAMPLES "" ON)
+if(BUILD_Thread_Pool_SAMPLES)
+    add_subdirectory(Samples)
+endif()
