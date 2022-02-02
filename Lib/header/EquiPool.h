@@ -25,12 +25,6 @@ public:
    * @param[in] newTask the newer task to add to the FIFO queue
    */
   void push(std::function<void(void)> newTask);
-  // /**
-  //  * @param[in] newTask the newer task to add to the FIFO queue
-  //  */
-  // template <typename Predicate> void push(Predicate newTask) {
-  //   this->push(std::function<void(void)>{newTask});
-  // };
 
 private:
   class EquiQueue;
