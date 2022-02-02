@@ -1,25 +1,22 @@
 /**
-* Author:    Andrea Casalino
-* Created:   25.09.2020
-*
-* report any bug to andrecasa91@gmail.com.
-**/
-#ifndef __QUEUE_STRATEGY_H__
-#define __QUEUE_STRATEGY_H__
+ * Author:    Andrea Casalino
+ * Created:   25.09.2020
+ *
+ * report any bug to andrecasa91@gmail.com.
+ **/
+#pragma once
 
-#include "../header/ThreadPool.h"
+#include <ThreadPool.h>
 
-namespace thpl{
+namespace thpl {
 
-    class IPool::QueueStrategy{
-    public:
-        virtual ~QueueStrategy() = default;
+class IPool::QueueStrategy {
+public:
+  virtual ~QueueStrategy() = default;
 
-        virtual bool isEmpty() = 0;
+  virtual bool isEmpty() const = 0;
 
-        virtual std::function<void(void)> pop() = 0;
-    };
+  virtual std::function<void(void)> pop() = 0;
+};
 
-}
-
-#endif
+} // namespace thpl
