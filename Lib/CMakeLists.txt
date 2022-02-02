@@ -17,14 +17,8 @@ else()
 	add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
 endif()
 
-target_include_directories(${PROJECT_SHORTNAME}
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/header>
-)
-
-target_compile_features(${PROJECT_SHORTNAME}
-    PUBLIC cxx_auto_type
-    PRIVATE cxx_variadic_templates
+target_include_directories(${PROJECT_SHORTNAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/header
 )
 
 find_package(Threads)
