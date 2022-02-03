@@ -1,4 +1,5 @@
 This package is a C++ implementation of the [thread pool](https://en.wikipedia.org/wiki/Thread_pool) pattern.
+Remember to leave a **star** if this package was useful.
 
 There are essentially 2 ways to use this library:
 
@@ -39,6 +40,7 @@ You can create synchronization points by waiting for all tasks to be completed:
 
 Note that the d'tor of a thread pool will internally call wait().
 Check also the 3 examples provided in ./Samples for more insights.
+Haven't yet left a **star**? Do it now :).
 
 ----------------------------------------------------------------------------------
 
