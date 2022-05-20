@@ -10,14 +10,10 @@
 #include <iostream>
 using namespace std;
 
-static constexpr std::chrono::milliseconds SLEEP_TIME =
-    std::chrono::milliseconds{200};
 static constexpr std::size_t TASK_NUMBER = 50;
 
 // make the current wait for a little bit
-void wait() {
-  std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
-}
+void wait() { std::this_thread::sleep_for(std::chrono::milliseconds{200}); }
 
 int main() {
 
@@ -25,7 +21,8 @@ int main() {
   {
     auto tic = chrono::steady_clock::now();
 
-    CppThreadPool::ThreadPoolFifo P(4);
+    const std::size_t pool_size = 4;
+    CppThreadPool::ThreadPoolFifo P(pool_size);
 
     for (auto k = 0; k < TASK_NUMBER; ++k) {
       P.push(wait);
@@ -34,7 +31,7 @@ int main() {
 
     auto toc = chrono::steady_clock::now();
     cout << endl
-         << "Elapsed time with the thread pool: "
+         << "Elapsed time with the thread pool of size " << pool_size << ": "
          << chrono::duration_cast<chrono::milliseconds>(toc - tic).count()
          << " ms" << endl;
   }

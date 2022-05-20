@@ -5,9 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <EquiPool.h>
+#include <CppThreadPool/CppThreadPool.hxx>
 
-#include <chrono>
 #include <iostream>
 #include <random>
 using namespace std;
@@ -84,7 +83,7 @@ int main() {
 
     auto tic = chrono::steady_clock::now();
 
-    thpl::equi::Pool pool(POOL_SIZE);
+    CppThreadPool::ThreadPoolFifo pool(POOL_SIZE);
     for (unsigned long k = 0; k < NUMBER_OF_SIMULATIONS; ++k)
       pool.push(
           [&Simulation]() { Simulation.newSimulation(TRIAL_X_SIMULATION); });

@@ -73,11 +73,13 @@ protected:
 private:
   std::list<TaskPtr> tasks;
 };
+} // namespace detail
 
+using Priority = unsigned;
+
+namespace detail {
 class PriorityQueue : public TasksQueue {
 public:
-  using Priority = unsigned;
-
   PriorityQueue() = default;
 
 protected:

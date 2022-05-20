@@ -5,12 +5,10 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <EquiPool.h>
+#include <CppThreadPool/CppThreadPool.hxx>
 
-#include <chrono>
 #include <fstream>
 #include <iostream>
-#include <list>
 using namespace std;
 
 #define NUMBER_OF_ARRAYS 50
@@ -79,9 +77,9 @@ int main() {
   {
     auto tic = chrono::steady_clock::now();
 
-    thpl::equi::Pool pool(
+    CppThreadPool::ThreadPoolFifo pool(
         POOL_SIZE); // After construction the threads are already spawned and
-    // ready to process work package
+                    // ready to process work package
     for (auto &job : work_packages) {
       pool.push([&job]() { job(); });
     }
