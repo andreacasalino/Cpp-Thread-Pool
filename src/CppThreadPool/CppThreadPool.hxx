@@ -12,8 +12,8 @@
 #include <functional>
 #include <future>
 #include <list>
+#include <map>
 #include <memory>
-#include <queue>
 #include <thread>
 
 namespace CppThreadPool {
@@ -94,14 +94,15 @@ protected:
       return nullptr;
     }
     std::scoped_lock lock(tasks_mtx);
-    auto result = std::move(tasks.top());
-    tasks.pop();
+    auto top = tasks.begin();
+    auto result = std::move(top->second);
+    tasks.erase(top);
     empty = tasks.empty();
     return std::move(result);
   }
 
 private:
-  std::priority_queue<Priority, detail::TaskPtr> tasks;
+  std::map<Priority, detail::TaskPtr, std::greater<Priority>> tasks;
 };
 
 template <typename TasksQueueT> class ThreadPool : public TasksQueueT {
@@ -111,36 +112,39 @@ public:
       throw std::runtime_error("invalid pool size");
     }
 
-    std::vector<std::atomic_bool> spawned;
-    spawned.resize(poolSize);
+    struct SpawnInfo {
+      std::atomic_bool waiting_all_spawned = true;
+      std::mutex spawned_mtx;
+      std::size_t spawned = 0;
+    } spawn_info;
     // spawn all the threads in the pool
     workers.reserve(poolSize);
     for (std::size_t k = 0; k < poolSize; ++k) {
-      auto &spawned_flag = spawned[k];
-      spawned_flag = false;
-
-      WorkerPtr worker = std::make_unique<Worker>(*this, std::thread{[this]() {
-        while (this->poolLife) {
-          auto task = this->pop_();
-          if (nullptr == task) {
-            continue;
-          }
-          --this->still_to_complete_tasks;
-          try {
-            task->action();
-          } catch (...) {
-            task->notifier.set_exception(std::current_exception());
-          }
-          task->notifier.set_value();
-        }
-      }});
-      workers.emplace_back(std::move(worker));
+      workers.emplace_back(
+          std::make_unique<std::thread>([&spawn_info, &poolSize, this]() {
+            {
+              std::scoped_lock lock(spawn_info.spawned_mtx);
+              ++spawn_info.spawned;
+              spawn_info.waiting_all_spawned = spawn_info.spawned == poolSize;
+            }
+            while (this->poolLife) {
+              auto task = this->pop();
+              if (nullptr == task) {
+                continue;
+              }
+              --this->still_to_complete_tasks;
+              try {
+                task->action();
+              } catch (...) {
+                task->notifier.set_exception(std::current_exception());
+              }
+              task->notifier.set_value();
+            }
+          }));
     }
 
     // make sure all the threads were spawned before returning
-    for (const auto &flag : spawned) {
-      while (!flag) {
-      }
+    while (spawn_info.waiting_all_spawned) {
     }
   }
 
@@ -154,7 +158,7 @@ public:
   ~ThreadPool() {
     poolLife = false;
     for (auto &worker : workers) {
-      worker->loop.join();
+      worker->join();
       worker.reset();
     }
   }
@@ -184,12 +188,9 @@ private:
   std::atomic<bool> poolLife = true;
   std::atomic<std::size_t> still_to_complete_tasks = 0;
 
-  struct Worker {
-    ThreadPool &container;
-    std::thread loop;
-  };
-  using WorkerPtr = std::unique_ptr<Worker>;
-  std::vector<WorkerPtr> workers;
+  detail::TaskPtr pop() { return this->TasksQueueT::pop_(); }
+
+  std::vector<std::unique_ptr<std::thread>> workers;
 };
 
 using ThreadPoolFifo = ThreadPool<FifoQueue>;

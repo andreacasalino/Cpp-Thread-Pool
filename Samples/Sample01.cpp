@@ -10,8 +10,9 @@
 #include <iostream>
 using namespace std;
 
-#define SLEEP_TIME 200
-#define TASK_NUMBER 50
+static constexpr std::chrono::milliseconds SLEEP_TIME =
+    std::chrono::milliseconds{200};
+static constexpr std::size_t TASK_NUMBER = 50;
 
 // make the current wait for a little bit
 void wait() {
