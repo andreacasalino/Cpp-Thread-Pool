@@ -27,7 +27,7 @@ using TaskPtr = std::unique_ptr<Task>;
 TaskPtr make_task(const std::function<void()> &action, std::future<void> &out) {
   TaskPtr result = std::make_unique<Task>();
   result->action = action;
-  out = result->notifier.get_future();
+  out = std::move(result->notifier.get_future());
   return result;
 }
 
@@ -120,27 +120,27 @@ public:
     // spawn all the threads in the pool
     workers.reserve(poolSize);
     for (std::size_t k = 0; k < poolSize; ++k) {
-      workers.emplace_back(
-          std::make_unique<std::thread>([&spawn_info, &poolSize, this]() {
-            {
-              std::scoped_lock lock(spawn_info.spawned_mtx);
-              ++spawn_info.spawned;
-              spawn_info.waiting_all_spawned = spawn_info.spawned == poolSize;
-            }
-            while (this->poolLife) {
-              auto task = this->pop();
-              if (nullptr == task) {
-                continue;
-              }
-              --this->still_to_complete_tasks;
-              try {
-                task->action();
-              } catch (...) {
-                task->notifier.set_exception(std::current_exception());
-              }
-              task->notifier.set_value();
-            }
-          }));
+      workers.emplace_back(std::make_unique<std::thread>([&spawn_info,
+                                                          &poolSize, this]() {
+        {
+          std::scoped_lock lock(spawn_info.spawned_mtx);
+          ++spawn_info.spawned;
+          spawn_info.waiting_all_spawned = !(spawn_info.spawned == poolSize);
+        }
+        while (this->poolLife) {
+          auto task = this->pop();
+          if (nullptr == task) {
+            continue;
+          }
+          --this->still_to_complete_tasks;
+          try {
+            task->action();
+          } catch (...) {
+            task->notifier.set_exception(std::current_exception());
+          }
+          task->notifier.set_value();
+        }
+      }));
     }
 
     // make sure all the threads were spawned before returning
