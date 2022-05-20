@@ -10,3 +10,8 @@ option(BUILD_Thread_Pool_SAMPLES "" ON)
 if(BUILD_Thread_Pool_SAMPLES)
    add_subdirectory(Samples)
 endif()
+
+option(BUILD_Thread_Pool_TESTS "" OFF)
+if(BUILD_Thread_Pool_TESTS)
+   add_subdirectory(tests)
+endif()
