@@ -9,6 +9,7 @@
 #define __CPP_THREAD_POOL__
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <future>
 #include <list>
@@ -24,11 +25,11 @@ struct Task {
 };
 using TaskPtr = std::unique_ptr<Task>;
 
-TaskPtr make_task(const std::function<void()> &action, std::future<void> &out) {
+std::pair<std::future<void>, TaskPtr>
+make_task(const std::function<void()> &action) {
   TaskPtr result = std::make_unique<Task>();
   result->action = action;
-  out = std::move(result->notifier.get_future());
-  return result;
+  return std::make_pair(result->notifier.get_future(), std::move(result));
 }
 
 class TasksQueue {
@@ -41,38 +42,39 @@ protected:
   std::atomic_bool empty = true;
   std::mutex tasks_mtx;
 };
-} // namespace detail
 
-class FifoQueue : public detail::TasksQueue {
+class FifoQueue : public TasksQueue {
 public:
   FifoQueue() = default;
 
 protected:
   std::future<void> push_(const std::function<void()> &action) {
     std::scoped_lock lock(tasks_mtx);
-    std::future<void> result;
-    auto new_task = detail::make_task(action, result);
-    tasks.emplace_back(std::move(new_task));
+    auto new_task = make_task(action);
+    tasks.emplace_back(std::move(new_task.second));
     empty = false;
-    return result;
+    return std::move(new_task.first);
   }
 
-  detail::TaskPtr pop_() {
+  TaskPtr pop_() {
     if (empty) {
       return nullptr;
     }
     std::scoped_lock lock(tasks_mtx);
+    empty = tasks.empty();
+    if (empty) {
+      return nullptr;
+    }
     auto result = std::move(tasks.front());
     tasks.pop_front();
-    empty = tasks.empty();
     return std::move(result);
   }
 
 private:
-  std::list<detail::TaskPtr> tasks;
+  std::list<TaskPtr> tasks;
 };
 
-class PriorityQueue : public detail::TasksQueue {
+class PriorityQueue : public TasksQueue {
 public:
   using Priority = unsigned;
 
@@ -82,34 +84,37 @@ protected:
   std::future<void> push_(const std::function<void()> &action,
                           const Priority &priority) {
     std::scoped_lock lock(tasks_mtx);
-    std::future<void> result;
-    auto new_task = detail::make_task(action, result);
-    tasks.emplace(priority, std::move(new_task));
+    auto new_task = make_task(action);
+    tasks.emplace(priority, std::move(new_task.second));
     empty = false;
-    return result;
+    return std::move(new_task.first);
   }
 
-  detail::TaskPtr pop_() {
+  TaskPtr pop_() {
     if (empty) {
       return nullptr;
     }
     std::scoped_lock lock(tasks_mtx);
+    empty = tasks.empty();
+    if (empty) {
+      return nullptr;
+    }
     auto top = tasks.begin();
     auto result = std::move(top->second);
     tasks.erase(top);
-    empty = tasks.empty();
     return std::move(result);
   }
 
 private:
-  std::map<Priority, detail::TaskPtr, std::greater<Priority>> tasks;
+  std::map<Priority, TaskPtr, std::greater<Priority>> tasks;
 };
+} // namespace detail
 
 template <typename TasksQueueT> class ThreadPool : public TasksQueueT {
 public:
   ThreadPool(const std::size_t &poolSize) {
-    if (poolSize == 0) {
-      throw std::runtime_error("invalid pool size");
+    if (0 == poolSize) {
+      throw std::runtime_error("Pool size should be at least 1");
     }
 
     struct SpawnInfo {
@@ -132,13 +137,13 @@ public:
           if (nullptr == task) {
             continue;
           }
-          --this->still_to_complete_tasks;
           try {
             task->action();
+            task->notifier.set_value();
           } catch (...) {
             task->notifier.set_exception(std::current_exception());
           }
-          task->notifier.set_value();
+          --this->still_to_complete_tasks;
         }
       }));
     }
@@ -193,8 +198,8 @@ private:
   std::vector<std::unique_ptr<std::thread>> workers;
 };
 
-using ThreadPoolFifo = ThreadPool<FifoQueue>;
-using ThreadPoolWithPriority = ThreadPool<PriorityQueue>;
+using ThreadPoolFifo = ThreadPool<detail::FifoQueue>;
+using ThreadPoolWithPriority = ThreadPool<detail::PriorityQueue>;
 } // namespace CppThreadPool
 
 #endif
