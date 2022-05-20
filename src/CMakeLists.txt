@@ -1,21 +1,9 @@
-set(PROJECT_SHORTNAME "CppThreadPool")
+project(CppThreadPool)
+set(SHORTNAME "CppThreadPool")
 
-file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.h ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+add_library(${SHORTNAME} INTERFACE)
 
-if(LIB_OPT)
-	set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-	add_library(${PROJECT_SHORTNAME} SHARED ${SOURCES})
-else()
-	add_library(${PROJECT_SHORTNAME} STATIC ${SOURCES})
-endif()
-
-target_include_directories(${PROJECT_SHORTNAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/header
-)
+target_include_directories(${SHORTNAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(Threads)
-target_link_libraries(${PROJECT_SHORTNAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-
-install(TARGETS ${PROJECT_SHORTNAME})
-install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/header/ DESTINATION include/${PROJECT_SHORTNAME} FILES_MATCHING PATTERN "*.h*")
-
+target_link_libraries(${SHORTNAME} INTERFACE ${CMAKE_THREAD_LIBS_INIT})

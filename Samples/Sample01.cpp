@@ -5,8 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <EquiPool.h>
-#include <chrono>
+#include <CppThreadPool/CppThreadPool.hxx>
+
 #include <iostream>
 using namespace std;
 
@@ -24,7 +24,8 @@ int main() {
   {
     auto tic = chrono::steady_clock::now();
 
-    thpl::equi::Pool P(4);
+    CppThreadPool::ThreadPoolFifo P(4);
+
     for (auto k = 0; k < TASK_NUMBER; ++k) {
       P.push(wait);
     }
