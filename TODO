@@ -1,6 +1,5 @@
-gestire meglio exception che potrebbero essere interne a thread
-move semantics/
-return future so that I can wait for completion of individual task
 mettere in readme il fatto che puoi aspettare anche singoli task che terminino
-mettere tutto in singolo header e incentivare persone a scaricarla stressando questo aspetto in readme
-aggiornare usage in readme
+
+    mettere tutto in singolo header e incentivare persone a scaricarla
+
+        stressando questo aspetto in readme aggiornare usage in readme

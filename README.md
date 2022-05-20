@@ -8,13 +8,11 @@ There are essentially 2 ways to use this library:
 
 Using this package is straightforward. You just have to build the thread pool you want to use:
 ```cpp
-#include <EquiPool.h>
-using namespace std;
-using namespace thpl::equi;
+#include <CppThreadPool/CppThreadPool.hxx>
 
 const std::size_t pool_size = 4;
 // build a new thread pool with the specified size
-Pool thread_pool(pool_size);
+CppThreadPool::ThreadPoolFifo thread_pool(pool_size);
 ```
 
 ... and push the tasks that you want to be parallely executed by the thread pool:
@@ -25,6 +23,7 @@ void dummy_task() {
 
 thread_pool.push(dummy_task);
 ```
+
 Task can be passed also in the form of **lambda functions**:
 ```cpp
 thread_pool.push([]() {
@@ -39,6 +38,27 @@ You can create synchronization points by waiting for all tasks to be completed:
 ```
 
 Note that the d'tor of a thread pool will internally call wait().
+
+You can also push a bunch of tasks, but wait for the completion of a specific one:
+```cpp
+// push and wait for completion of only the second task
+thread_pool.push(dummy_task);
+std::future<void> notification = thread_pool.push(dummy_task);
+thread_pool.push(dummy_task);
+notification.wait();
+```
+
+The future returned when pushing the task can be also used to catch an exception that might be throwned when running the task:
+```cpp
+// in case something went wrong calling get will let you catch the throwned
+// exception
+try {
+  notification.get();
+} catch (const std::exception &e) {
+  // do smething with e
+}
+```
+
 Check also the 3 examples provided in ./Samples for more insights.
 Haven't yet left a **star**? Do it now :).
 
