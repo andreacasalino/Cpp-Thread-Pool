@@ -5,10 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
-project(Thread-Pool-Core)
-add_subdirectory(Lib)
+project(CppThreadPool)
+add_subdirectory(src)
 
-option(BUILD_Thread_Pool_SAMPLES "" ON)
-if(BUILD_Thread_Pool_SAMPLES)
-    add_subdirectory(Samples)
-endif()
+# option(BUILD_Thread_Pool_SAMPLES "" ON)
+# if(BUILD_Thread_Pool_SAMPLES)
+#    add_subdirectory(Samples)
+# endif()
