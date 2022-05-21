@@ -49,40 +49,55 @@ public:
   }
 
   std::future<void> push(const std::function<void()> &action) {
-    switch (pool.index()) {
-    case 0:
-      return std::get<std::unique_ptr<Fifo>>(pool)->push(action);
-    case 1:
-      return std::get<std::unique_ptr<Lifo>>(pool)->push(action);
-    case 2:
-      break;
-    }
-    Priority p = priority_sampler.sample();
-    return std::get<std::unique_ptr<Prioritized>>(pool)->push(action, p);
+    std::future<void> result;
+    struct Visitor {
+      const std::function<void()> &action;
+      std::future<void> &result;
+      UniformSampler &priority_sampler;
+
+      void operator()(std::unique_ptr<Fifo> &pool) const {
+        result = pool->push(action);
+      }
+      void operator()(std::unique_ptr<Lifo> &pool) const {
+        result = pool->push(action);
+      }
+      void operator()(std::unique_ptr<Prioritized> &pool) const {
+        Priority p = priority_sampler.sample();
+        result = pool->push(action, p);
+      }
+    } visitor{action, result, priority_sampler};
+    std::visit(visitor, pool);
+    return result;
   }
 
   void wait() {
-    switch (pool.index()) {
-    case 0:
-      std::get<std::unique_ptr<Fifo>>(pool)->wait();
-    case 1:
-      std::get<std::unique_ptr<Lifo>>(pool)->wait();
-    case 2:
-      std::get<std::unique_ptr<Prioritized>>(pool)->wait();
-    }
+    struct Visitor {
+      void operator()(std::unique_ptr<Fifo> &pool) const { pool->wait(); }
+      void operator()(std::unique_ptr<Lifo> &pool) const { pool->wait(); }
+      void operator()(std::unique_ptr<Prioritized> &pool) const {
+        pool->wait();
+      }
+    } visitor;
+    std::visit(visitor, pool);
   }
 
   std::size_t size() const {
-    switch (pool.index()) {
-    case 0:
-      return std::get<std::unique_ptr<Fifo>>(pool)->size();
-    case 1:
-      return std::get<std::unique_ptr<Lifo>>(pool)->size();
-    case 2:
-      break;
-    }
-    return std::get<std::unique_ptr<Prioritized>>(pool)->size();
-    return 0;
+    std::size_t result;
+    struct Visitor {
+      std::size_t &result;
+
+      void operator()(const std::unique_ptr<Fifo> &pool) const {
+        result = pool->size();
+      }
+      void operator()(const std::unique_ptr<Lifo> &pool) const {
+        result = pool->size();
+      }
+      void operator()(const std::unique_ptr<Prioritized> &pool) const {
+        result = pool->size();
+      }
+    } visitor{result};
+    std::visit(visitor, pool);
+    return result;
   }
 
 private:
