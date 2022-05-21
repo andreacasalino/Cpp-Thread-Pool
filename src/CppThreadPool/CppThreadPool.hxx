@@ -133,7 +133,11 @@ public:
               } catch (...) {
                 task->notifier.set_exception(std::current_exception());
               }
-              --this->tasks_to_complete;
+              {
+                std::scoped_lock counter_lock(counter.mtx);
+                --counter.tasks_to_complete;
+                counter.something_to_complete = counter.tasks_to_complete != 0;
+              }
             }
           }));
     }
@@ -161,7 +165,11 @@ public:
 
   template <typename... Args>
   std::future<void> push(const std::function<void()> &action, Args... args) {
-    ++tasks_to_complete;
+    {
+      std::scoped_lock counter_lock(counter.mtx);
+      ++counter.tasks_to_complete;
+      counter.something_to_complete = true;
+    }
     auto new_task = detail::make_task(action);
     std::scoped_lock lock(tasks_mtx);
     this->TaskContainerT::push(std::move(new_task.second),
@@ -174,10 +182,8 @@ public:
    * \brief Blocking wait for all the previously pushed tasks to be completed.
    * Threads are not destroyed after, and new tasks can be passed to pool.
    */
-  void wait(const std::chrono::nanoseconds &polling_time =
-                std::chrono::microseconds{50}) {
-    while (tasks_to_complete != 0) {
-      std::this_thread::sleep_for(polling_time);
+  void wait() {
+    while (counter.something_to_complete) {
     }
   }
 
@@ -192,7 +198,12 @@ private:
 
   std::mutex tasks_mtx;
   std::atomic_bool no_new_tasks = true;
-  std::atomic<std::size_t> tasks_to_complete = 0;
+  struct TaskToCompleteCounter {
+    std::mutex mtx;
+    std::size_t tasks_to_complete = 0;
+    std::atomic_bool something_to_complete = false;
+  };
+  TaskToCompleteCounter counter;
 };
 
 using Fifo = ThreadPool<detail::FifoTasksContainer>;
