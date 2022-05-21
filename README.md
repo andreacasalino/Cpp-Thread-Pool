@@ -1,3 +1,5 @@
+![binaries_compilation](https://github.com/andreacasalino/Cpp-Thread-Pool/actions/workflows/runTests.yml/badge.svg)
+
 This package is a C++ implementation of the [thread pool](https://en.wikipedia.org/wiki/Thread_pool) pattern.
 Remember to leave a **star** if this package was useful.
 
