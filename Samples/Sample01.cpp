@@ -22,7 +22,7 @@ int main() {
     auto tic = chrono::steady_clock::now();
 
     const std::size_t pool_size = 4;
-    CppThreadPool::ThreadPoolFifo P(pool_size);
+    CppThreadPool::Fifo P(pool_size);
 
     for (auto k = 0; k < TASK_NUMBER; ++k) {
       P.push(wait);
@@ -30,8 +30,7 @@ int main() {
     P.wait();
 
     auto toc = chrono::steady_clock::now();
-    cout << endl
-         << "Elapsed time with the thread pool of size " << pool_size << ": "
+    cout << "Elapsed time with the thread pool of size " << pool_size << ": "
          << chrono::duration_cast<chrono::milliseconds>(toc - tic).count()
          << " ms" << endl;
   }

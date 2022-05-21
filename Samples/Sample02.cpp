@@ -73,11 +73,10 @@ int main() {
     }
   }
 
-  cout << "pool of threads" << endl;
   {
     auto tic = chrono::steady_clock::now();
 
-    CppThreadPool::ThreadPoolFifo pool(
+    CppThreadPool::Fifo pool(
         POOL_SIZE); // After construction the threads are already spawned and
                     // ready to process work package
     for (auto &job : work_packages) {
@@ -86,8 +85,7 @@ int main() {
     pool.wait(); // wait for the pool to terminate the tasks
 
     auto toc = chrono::steady_clock::now();
-    cout << endl
-         << "Elapsed time with the thread pool: "
+    cout << "Elapsed time with the thread pool of size " << POOL_SIZE << ": "
          << chrono::duration_cast<chrono::milliseconds>(toc - tic).count()
          << " ms" << endl;
 
