@@ -6,8 +6,9 @@ There are essentially 3 ways to use this library:
  * **CppThreadPool::Fifo** implements a standard thread pool, where tasks are executed with a FIFO logic
  * **CppThreadPool::Lifo** implements a similar thread pool logics, where tasks are executed with a LIFO logic
  * **CppThreadPool::Prioritized** implements a prioritized thread pool, where the tasks externally feeded are internally ordered according to a prescribed priority level
-
-Using this package is straightforward. You just have to build the thread pool you want to use:
+ 
+All the functionalities are contained in [this](./src/CppThreadPool/CppThreadPool.hxx) single header file!
+Using this package is straightforward. You just have to create the pool you want to use:
 ```cpp
 #include <CppThreadPool/CppThreadPool.hxx>
 
