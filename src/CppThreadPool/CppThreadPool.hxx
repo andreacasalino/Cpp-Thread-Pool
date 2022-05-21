@@ -87,7 +87,7 @@ protected:
   bool empty() const { return tasks.empty(); }
 
 private:
-  std::map<Priority, TaskPtr, std::greater<Priority>> tasks;
+  std::multimap<Priority, TaskPtr, std::greater<Priority>> tasks;
 };
 } // namespace detail
 
@@ -150,11 +150,12 @@ public:
    * \brief Destroyer. Threads inside the pool are killed even if the queue of
    * tasks to be done is not empty.
    */
-  ~ThreadPool() {
+  virtual ~ThreadPool() {
     poolLife = false;
     for (auto &worker : workers) {
-      worker->join();
-      worker.reset();
+      if (worker->joinable()) {
+        worker->join();
+      }
     }
   }
 
