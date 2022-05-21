@@ -106,33 +106,36 @@ public:
     // spawn all the threads in the pool
     workers.reserve(poolSize);
     for (std::size_t k = 0; k < poolSize; ++k) {
-      workers.emplace_back(std::make_unique<std::thread>([&spawn_info,
-                                                          &poolSize, this]() {
-        {
-          std::scoped_lock lock(spawn_info.spawned_mtx);
-          ++spawn_info.spawned;
-          spawn_info.waiting_all_spawned = !(spawn_info.spawned == poolSize);
-        }
-        while (this->poolLife) {
-          if (tasks_cotnainer_empty) {
-            continue;
-          }
-          std::scoped_lock lock(tasks_mtx);
-          const bool is_now_empty = this->TaskContainerT::empty();
-          tasks_cotnainer_empty = is_now_empty;
-          if (is_now_empty) {
-            continue;
-          }
-          auto task = this->TaskContainerT::pop();
-          try {
-            task->action();
-            task->notifier.set_value();
-          } catch (...) {
-            task->notifier.set_exception(std::current_exception());
-          }
-          --this->tasks_to_complete;
-        }
-      }));
+      workers.emplace_back(
+          std::make_unique<std::thread>([&spawn_info, &poolSize, this]() {
+            {
+              std::scoped_lock lock(spawn_info.spawned_mtx);
+              ++spawn_info.spawned;
+              spawn_info.waiting_all_spawned = spawn_info.spawned != poolSize;
+            }
+            while (this->poolLife) {
+              if (no_new_tasks) {
+                continue;
+              }
+              detail::TaskPtr task;
+              {
+                std::scoped_lock lock(tasks_mtx);
+                const bool is_now_empty = this->TaskContainerT::empty();
+                no_new_tasks = is_now_empty;
+                if (is_now_empty) {
+                  continue;
+                }
+                task = this->TaskContainerT::pop();
+              }
+              try {
+                task->action();
+                task->notifier.set_value();
+              } catch (...) {
+                task->notifier.set_exception(std::current_exception());
+              }
+              --this->tasks_to_complete;
+            }
+          }));
     }
 
     // make sure all the threads were spawned before returning
@@ -158,11 +161,11 @@ public:
   template <typename... Args>
   std::future<void> push(const std::function<void()> &action, Args... args) {
     ++tasks_to_complete;
-    std::scoped_lock lock(tasks_mtx);
     auto new_task = detail::make_task(action);
+    std::scoped_lock lock(tasks_mtx);
     this->TaskContainerT::push(std::move(new_task.second),
                                std::forward<Args>(args)...);
-    tasks_cotnainer_empty = false;
+    no_new_tasks = false;
     return std::move(new_task.first);
   }
 
@@ -171,7 +174,7 @@ public:
    * Threads are not destroyed after, and new tasks can be passed to pool.
    */
   void wait(const std::chrono::nanoseconds &polling_time =
-                std::chrono::milliseconds{1}) {
+                std::chrono::microseconds{50}) {
     while (tasks_to_complete != 0) {
       std::this_thread::sleep_for(polling_time);
     }
@@ -187,7 +190,7 @@ private:
   std::vector<std::unique_ptr<std::thread>> workers;
 
   std::mutex tasks_mtx;
-  std::atomic_bool tasks_cotnainer_empty = true;
+  std::atomic_bool no_new_tasks = true;
   std::atomic<std::size_t> tasks_to_complete = 0;
 };
 
