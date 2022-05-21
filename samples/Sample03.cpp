@@ -5,9 +5,8 @@
  * report any bug to andrecasa91@gmail.com.
  **/
 
-#include <EquiPool.h>
+#include <CppThreadPool/CppThreadPool.hxx>
 
-#include <chrono>
 #include <iostream>
 #include <random>
 using namespace std;
@@ -71,11 +70,10 @@ int main() {
 
     auto toc = chrono::steady_clock::now();
 
-    cout << endl
-         << "Elapsed time with a single thread: "
+    cout << "Elapsed time with a single thread: "
          << chrono::duration_cast<chrono::milliseconds>(toc - tic).count()
          << endl;
-    cout << endl << "Pi value: " << Simulation.evalPi() << endl;
+    cout << "Pi value: " << Simulation.evalPi() << endl;
   }
 
   // pool of threads
@@ -84,7 +82,7 @@ int main() {
 
     auto tic = chrono::steady_clock::now();
 
-    thpl::equi::Pool pool(POOL_SIZE);
+    CppThreadPool::Fifo pool(POOL_SIZE);
     for (unsigned long k = 0; k < NUMBER_OF_SIMULATIONS; ++k)
       pool.push(
           [&Simulation]() { Simulation.newSimulation(TRIAL_X_SIMULATION); });
@@ -93,10 +91,10 @@ int main() {
     auto toc = chrono::steady_clock::now();
 
     cout << endl
-         << "Elapsed time with a thread pool: "
+         << "Elapsed time with a thread pool of size " << POOL_SIZE << ": "
          << chrono::duration_cast<chrono::milliseconds>(toc - tic).count()
          << endl;
-    cout << endl << "Pi value: " << Simulation.evalPi() << endl;
+    cout << "Pi value: " << Simulation.evalPi() << endl;
   }
 
   return EXIT_SUCCESS;
