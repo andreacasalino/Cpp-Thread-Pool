@@ -32,43 +32,35 @@ make_task(const std::function<void()> &action) {
   return std::make_pair(result->notifier.get_future(), std::move(result));
 }
 
-class TasksQueue {
-public:
-  virtual ~TasksQueue() = default;
-
+class FifoTasksContainer {
 protected:
-  TasksQueue() = default;
+  FifoTasksContainer() = default;
 
-  std::atomic_bool empty = true;
-  std::mutex tasks_mtx;
+  void push(TaskPtr task) { tasks.emplace_back(std::move(task)); }
+  TaskPtr pop() {
+    TaskPtr result = std::move(tasks.front());
+    tasks.pop_front();
+    return result;
+  }
+
+  bool empty() const { return tasks.empty(); }
+
+private:
+  std::list<TaskPtr> tasks;
 };
 
-class FifoQueue : public TasksQueue {
-public:
-  FifoQueue() = default;
-
+class LifoTasksContainer {
 protected:
-  std::future<void> push_(const std::function<void()> &action) {
-    std::scoped_lock lock(tasks_mtx);
-    auto new_task = make_task(action);
-    tasks.emplace_back(std::move(new_task.second));
-    empty = false;
-    return std::move(new_task.first);
+  LifoTasksContainer() = default;
+
+  void push(TaskPtr task) { tasks.emplace_back(std::move(task)); }
+  TaskPtr pop() {
+    TaskPtr result = std::move(tasks.back());
+    tasks.pop_back();
+    return result;
   }
 
-  TaskPtr pop_() {
-    if (empty) {
-      return nullptr;
-    }
-    std::scoped_lock lock(tasks_mtx);
-    empty = tasks.empty();
-    if (empty) {
-      return nullptr;
-    }
-    auto result = std::move(tasks.front());
-    tasks.pop_front();
-    return std::move(result);
-  }
+  bool empty() const { return tasks.empty(); }
 
 private:
   std::list<TaskPtr> tasks;
@@ -78,41 +70,28 @@ private:
 using Priority = unsigned;
 
 namespace detail {
-class PriorityQueue : public TasksQueue {
-public:
-  PriorityQueue() = default;
-
+class PrioritizedTasksContainer {
 protected:
-  std::future<void> push_(const std::function<void()> &action,
-                          const Priority &priority) {
-    std::scoped_lock lock(tasks_mtx);
-    auto new_task = make_task(action);
-    tasks.emplace(priority, std::move(new_task.second));
-    empty = false;
-    return std::move(new_task.first);
+  PrioritizedTasksContainer() = default;
+
+  void push(TaskPtr task, const Priority &p) {
+    tasks.emplace(p, std::move(task));
+  }
+  TaskPtr pop() {
+    auto top = tasks.begin();
+    TaskPtr result = std::move(top->second);
+    tasks.erase(top);
+    return result;
   }
 
-  TaskPtr pop_() {
-    if (empty) {
-      return nullptr;
-    }
-    std::scoped_lock lock(tasks_mtx);
-    empty = tasks.empty();
-    if (empty) {
-      return nullptr;
-    }
-    auto top = tasks.begin();
-    auto result = std::move(top->second);
-    tasks.erase(top);
-    return std::move(result);
-  }
+  bool empty() const { return tasks.empty(); }
 
 private:
   std::map<Priority, TaskPtr, std::greater<Priority>> tasks;
 };
 } // namespace detail
 
-template <typename TasksQueueT> class ThreadPool : public TasksQueueT {
+template <typename TaskContainerT> class ThreadPool : public TaskContainerT {
 public:
   ThreadPool(const std::size_t &poolSize) {
     if (0 == poolSize) {
@@ -135,17 +114,23 @@ public:
           spawn_info.waiting_all_spawned = !(spawn_info.spawned == poolSize);
         }
         while (this->poolLife) {
-          auto task = this->pop();
-          if (nullptr == task) {
+          if (tasks_cotnainer_empty) {
             continue;
           }
+          std::scoped_lock lock(tasks_mtx);
+          const bool is_now_empty = this->TaskContainerT::empty();
+          tasks_cotnainer_empty = is_now_empty;
+          if (is_now_empty) {
+            continue;
+          }
+          auto task = this->TaskContainerT::pop();
           try {
             task->action();
             task->notifier.set_value();
           } catch (...) {
             task->notifier.set_exception(std::current_exception());
           }
-          --this->still_to_complete_tasks;
+          --this->tasks_to_complete;
         }
       }));
     }
@@ -170,9 +155,15 @@ public:
     }
   }
 
-  template <typename... Args> std::future<void> push(Args... args) {
-    ++still_to_complete_tasks;
-    return this->TasksQueueT::push_(args...);
+  template <typename... Args>
+  std::future<void> push(const std::function<void()> &action, Args... args) {
+    ++tasks_to_complete;
+    std::scoped_lock lock(tasks_mtx);
+    auto new_task = detail::make_task(action);
+    this->TaskContainerT::push(std::move(new_task.second),
+                               std::forward<Args>(args)...);
+    tasks_cotnainer_empty = false;
+    return std::move(new_task.first);
   }
 
   /**
@@ -181,7 +172,7 @@ public:
    */
   void wait(const std::chrono::nanoseconds &polling_time =
                 std::chrono::milliseconds{1}) {
-    while (still_to_complete_tasks != 0) {
+    while (tasks_to_complete != 0) {
       std::this_thread::sleep_for(polling_time);
     }
   }
@@ -193,15 +184,16 @@ public:
 
 private:
   std::atomic<bool> poolLife = true;
-  std::atomic<std::size_t> still_to_complete_tasks = 0;
-
-  detail::TaskPtr pop() { return this->TasksQueueT::pop_(); }
-
   std::vector<std::unique_ptr<std::thread>> workers;
+
+  std::mutex tasks_mtx;
+  std::atomic_bool tasks_cotnainer_empty = true;
+  std::atomic<std::size_t> tasks_to_complete = 0;
 };
 
-using ThreadPoolFifo = ThreadPool<detail::FifoQueue>;
-using ThreadPoolWithPriority = ThreadPool<detail::PriorityQueue>;
+using Fifo = ThreadPool<detail::FifoTasksContainer>;
+using Lifo = ThreadPool<detail::LifoTasksContainer>;
+using Prioritized = ThreadPool<detail::PrioritizedTasksContainer>;
 } // namespace CppThreadPool
 
 #endif

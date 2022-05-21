@@ -5,6 +5,7 @@
 
 #include <random>
 #include <stdexcept>
+#include <variant>
 
 namespace CppThreadPool {
 class UniformSampler {
@@ -26,49 +27,77 @@ private:
   mutable std::uniform_int_distribution<> distribution;
 };
 
+enum class PoolType { FIFO, LIFO, PRIORITY };
+
+using AnyPool = std::variant<std::unique_ptr<Fifo>, std::unique_ptr<Lifo>,
+                             std::unique_ptr<Prioritized>>;
+
 class PoolWrapper {
 public:
-  PoolWrapper(const std::size_t size, const bool fifo_or_prioritized) {
-    if (fifo_or_prioritized) {
-      as_fifo = std::make_unique<ThreadPoolFifo>(size);
-    } else {
-      as_prioritized = std::make_unique<ThreadPoolWithPriority>(size);
+  PoolWrapper(const std::size_t size, const PoolType type) {
+    switch (type) {
+    case PoolType::FIFO:
+      pool = std::make_unique<Fifo>(size);
+      break;
+    case PoolType::LIFO:
+      pool = std::make_unique<Lifo>(size);
+      break;
+    case PoolType::PRIORITY:
+      pool = std::make_unique<Prioritized>(size);
+      break;
     }
   }
 
   std::future<void> push(const std::function<void()> &action) {
-    if (nullptr == as_fifo) {
-      Priority p = priority_sampler.sample();
-      return as_prioritized->push(action, p);
+    switch (pool.index()) {
+    case 0:
+      return std::get<std::unique_ptr<Fifo>>(pool)->push(action);
+    case 1:
+      return std::get<std::unique_ptr<Lifo>>(pool)->push(action);
+    case 2:
+      break;
     }
-    return as_fifo->push(action);
+    Priority p = priority_sampler.sample();
+    return std::get<std::unique_ptr<Prioritized>>(pool)->push(action, p);
   }
 
   void wait() {
-    if (nullptr == as_fifo) {
-      as_prioritized->wait();
-    } else {
-      as_fifo->wait();
+    switch (pool.index()) {
+    case 0:
+      std::get<std::unique_ptr<Fifo>>(pool)->wait();
+    case 1:
+      std::get<std::unique_ptr<Lifo>>(pool)->wait();
+    case 2:
+      std::get<std::unique_ptr<Prioritized>>(pool)->wait();
     }
   }
 
   std::size_t size() const {
-    if (nullptr == as_fifo) {
-      return as_prioritized->size();
+    switch (pool.index()) {
+    case 0:
+      return std::get<std::unique_ptr<Fifo>>(pool)->size();
+    case 1:
+      return std::get<std::unique_ptr<Lifo>>(pool)->size();
+    case 2:
+      break;
     }
-    return as_fifo->size();
+    return std::get<std::unique_ptr<Prioritized>>(pool)->size();
+    return 0;
   }
 
 private:
-  std::unique_ptr<ThreadPoolFifo> as_fifo;
-  std::unique_ptr<ThreadPoolWithPriority> as_prioritized;
+  AnyPool pool;
   UniformSampler priority_sampler;
 };
 } // namespace CppThreadPool
 
+#define GENERATE_POOL_TYPES                                                    \
+  GENERATE(CppThreadPool::PoolType::FIFO, CppThreadPool::PoolType::LIFO,       \
+           CppThreadPool::PoolType::PRIORITY)
+
 TEST_CASE("Build destroy multiple times a pool", "[ThreadPool]") {
   const std::size_t size = 4;
-  auto kind = GENERATE(true, false);
+  auto kind = GENERATE_POOL_TYPES;
   for (std::size_t k = 0; k < 5; ++k) {
     CppThreadPool::PoolWrapper pool(size, kind);
     CHECK(size == pool.size());
@@ -76,23 +105,21 @@ TEST_CASE("Build destroy multiple times a pool", "[ThreadPool]") {
 }
 
 namespace {
-class ExceptionTest : public std::runtime_error {
-public:
-  ExceptionTest() : ExceptionTest("") {}
-
-  ExceptionTest(const std::string &message) : std::runtime_error(message) {}
-};
-
 template <std::size_t MILLISEC_WAIT> void wait() {
   std::this_thread::sleep_for(std::chrono::milliseconds{MILLISEC_WAIT});
 }
+
+class ExceptionTest : public std::runtime_error {
+public:
+  ExceptionTest() : std::runtime_error("") {}
+};
 
 void failure() { throw ExceptionTest{}; }
 } // namespace
 
 TEST_CASE("Single task completed notification", "[ThreadPool]") {
   auto threads = GENERATE(1, 2, 3, 4);
-  auto kind = GENERATE(true, false);
+  auto kind = GENERATE_POOL_TYPES;
   CppThreadPool::PoolWrapper pool(threads, kind);
 
   SECTION("Single push and single wait") {
@@ -110,7 +137,7 @@ TEST_CASE("Single task completed notification", "[ThreadPool]") {
 
 TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
-  auto kind = GENERATE(true, false);
+  auto kind = GENERATE_POOL_TYPES;
   CppThreadPool::PoolWrapper pool(threads, kind);
 
   SECTION("Single push and single wait") {
@@ -138,7 +165,7 @@ TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
 
 TEST_CASE("Multiple tasks and wait for all", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
-  auto kind = GENERATE(true, false);
+  auto kind = GENERATE_POOL_TYPES;
   CppThreadPool::PoolWrapper pool(threads, kind);
 
   for (std::size_t k = 0; k < 5; ++k) {
@@ -171,7 +198,7 @@ TEST_CASE("Efficiency check", "[ThreadPool]") {
     }
   });
 
-  CppThreadPool::ThreadPoolFifo pool(2);
+  CppThreadPool::Fifo pool(2);
   auto parallel = measure_time([&]() {
     for (std::size_t t = 0; t < tasks; ++t) {
       pool.push(wait<150>);
