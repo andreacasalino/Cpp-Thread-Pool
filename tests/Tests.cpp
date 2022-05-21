@@ -9,17 +9,21 @@
 namespace CppThreadPool {
 class UniformSampler {
 public:
-  UniformSampler() : distribution(1, 20) { resetSeed(0); }
+  UniformSampler() : generator(std::random_device{}()), distribution(1, 20) {
+    resetSeed(2);
+  }
 
-  Priority sample() const { return this->distribution(this->generator); };
+  Priority sample() const {
+    return static_cast<Priority>(this->distribution(this->generator));
+  };
 
   void resetSeed(const std::size_t &newSeed) {
     this->generator.seed(static_cast<unsigned int>(newSeed));
   }
 
 private:
-  mutable std::default_random_engine generator;
-  mutable std::uniform_int_distribution<Priority> distribution;
+  mutable std::mt19937 generator;
+  mutable std::uniform_int_distribution<> distribution;
 };
 
 class PoolWrapper {
