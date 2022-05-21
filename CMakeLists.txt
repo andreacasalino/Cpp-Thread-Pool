@@ -8,7 +8,7 @@ add_subdirectory(src)
 
 option(BUILD_Thread_Pool_SAMPLES "" ON)
 if(BUILD_Thread_Pool_SAMPLES)
-   add_subdirectory(Samples)
+   add_subdirectory(samples)
 endif()
 
 option(BUILD_Thread_Pool_TESTS "" OFF)

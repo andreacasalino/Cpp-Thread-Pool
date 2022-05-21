@@ -17,7 +17,9 @@ void dummy_task() {
 int main() {
   const std::size_t pool_size = 4;
   // build a new thread pool with the specified size
-  CppThreadPool::ThreadPoolFifo thread_pool(pool_size);
+  CppThreadPool::Fifo thread_pool(
+      pool_size); // thread pool with a FIFO logic: you can also decide to use a
+                  // LIFO or a prioritized queue
 
   // add tasks that will be parallely executed by the pool
   thread_pool.push(dummy_task);
@@ -25,7 +27,7 @@ int main() {
     // do something meaningfull
   });
 
-  // wait for the all pushed tasks to be completed
+  // wait for ALL pushed tasks to be completed
   thread_pool.wait();
 
   // add more tasks
