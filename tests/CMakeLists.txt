@@ -1,5 +1,3 @@
-project(CppThreadPool-Tests)
-
 include(FetchContent)
 FetchContent_Declare(
 	catch2
@@ -8,7 +6,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(catch2)
 
-add_executable(Tests Tests.cpp)
+file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+add_executable(Tests ${SRC_FILES})
 target_link_libraries(Tests PUBLIC 
     CppThreadPool
     Catch2::Catch2

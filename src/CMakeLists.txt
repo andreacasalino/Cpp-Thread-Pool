@@ -1,4 +1,3 @@
-project(CppThreadPool)
 set(SHORTNAME "CppThreadPool")
 
 add_library(${SHORTNAME} INTERFACE)
