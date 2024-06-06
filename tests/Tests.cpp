@@ -19,8 +19,6 @@ TEST_CASE("Build destroy multiple times a pool", "[ThreadPool]") {
   }
 }
 
-/*
-
 namespace {
 template <std::size_t MILLISEC_WAIT> void wait() {
   std::this_thread::sleep_for(std::chrono::milliseconds{MILLISEC_WAIT});
@@ -44,13 +42,14 @@ TEST_CASE("Single task completed notification", "[ThreadPool]") {
     CHECK_NOTHROW(fut.get());
   }
 
-  SECTION("Single push and single wait, failure") {
-    auto fut = pool.push(throw_exc);
-    fut.wait();
-    CHECK_THROWS_AS(fut.get(), ExceptionTest);
-  }
+  // SECTION("Single push and single wait, failure") {
+  //   auto fut = pool.push(throw_exc);
+  //   fut.wait();
+  //   CHECK_THROWS_AS(fut.get(), ExceptionTest);
+  // }
 }
 
+/*
 TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
   Fifo pool{static_cast<std::size_t>(threads)};
