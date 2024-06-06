@@ -34,7 +34,7 @@ void throw_exc() { throw ExceptionTest{}; }
 
 TEST_CASE("Single task completed notification", "[ThreadPool]") {
   auto threads = GENERATE(1, 2, 3, 4);
-  Fifo pool{threads};
+  Fifo pool{static_cast<std::size_t>(threads)};
 
   SECTION("Single push and single wait, success") {
     auto fut = pool.push(wait<500>);
@@ -51,7 +51,7 @@ TEST_CASE("Single task completed notification", "[ThreadPool]") {
 
 TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
-  Fifo pool{threads};
+  Fifo pool{static_cast<std::size_t>(threads)};
 
   SECTION("Multiple push and single wait, success") {
     std::vector<std::future<void>> waiters;
@@ -78,7 +78,7 @@ TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
 
 TEST_CASE("Multiple tasks and wait for all", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
-  Fifo pool{threads};
+  Fifo pool{static_cast<std::size_t>(threads)};
 
   for (std::size_t k = 0; k < 5; ++k) {
     std::vector<std::future<void>> waiters;
