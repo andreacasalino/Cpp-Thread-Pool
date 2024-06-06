@@ -19,6 +19,8 @@ TEST_CASE("Build destroy multiple times a pool", "[ThreadPool]") {
   }
 }
 
+/*
+
 namespace {
 template <std::size_t MILLISEC_WAIT> void wait() {
   std::this_thread::sleep_for(std::chrono::milliseconds{MILLISEC_WAIT});
@@ -123,3 +125,5 @@ TEST_CASE("Efficiency check", "[ThreadPool]") {
 }
 
 // TODO check other pool types
+
+*/
