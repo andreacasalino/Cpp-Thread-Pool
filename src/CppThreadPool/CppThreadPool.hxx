@@ -142,8 +142,7 @@ public:
    * tasks to be done is not empty.
    */
   ~ThreadPool() {
-    //keep_run.store(false, std::memory_order::memory_order_acquire);
-    keep_run.store(false);
+    keep_run.store(false, std::memory_order::memory_order_acquire);
     for (auto &worker : workers) {
       worker.join();
     }
