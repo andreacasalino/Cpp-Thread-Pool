@@ -190,13 +190,13 @@ private:
         task = std::move(this->TaskContainerT::pop());
         tasks_numb.fetch_add(-1, std::memory_order::memory_order_release);
       }
-      auto &[notifier, action] = *task;
-      try {
-        action();
-        notifier.set_value();
-      } catch (...) {
-        notifier.set_exception(std::current_exception());
-      }
+      // auto &[notifier, action] = *task;
+      // try {
+      //   action();
+      //   notifier.set_value();
+      // } catch (...) {
+      //   notifier.set_exception(std::current_exception());
+      // }
     }
   }
 
