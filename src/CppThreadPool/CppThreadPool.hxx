@@ -142,10 +142,7 @@ public:
    * tasks to be done is not empty.
    */
   ~ThreadPool() {
-    {
-      detail::SpinLockGuard guard{lock};
-      keep_run.store(false, std::memory_order::memory_order_acquire);
-    }
+    keep_run.store(false, std::memory_order::memory_order_acquire);
     for (auto &worker : workers) {
       worker.join();
     }
