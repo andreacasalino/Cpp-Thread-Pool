@@ -22,17 +22,16 @@
 namespace CppThreadPool {
 namespace detail {
 struct Task {
+  template <typename Pred>
+  Task(Pred &&pred) : action{std::forward<Pred>(pred)} {}
+
   std::promise<void> notifier;
   std::function<void()> action;
 };
 using TaskPtr = std::unique_ptr<Task>;
 
-template <typename Pred>
-std::pair<std::future<void>, TaskPtr> make_task(Pred &&action) {
-  TaskPtr result = std::make_unique<Task>();
-  result->action = std::forward<Pred>(action);
-  std::future<void> fut = result->notifier.get_future();
-  return std::make_pair(std::move(fut), std::move(result));
+template <typename Pred> TaskPtr make_task(Pred &&pred) {
+  return std::make_unique<Task>(std::forward<Pred>(pred));
 }
 
 class FifoTasksContainer {
@@ -150,9 +149,8 @@ public:
 
   template <typename Pred, typename... Args>
   std::future<void> push(Pred &&action, Args &&...args) {
-    std::future<void> retVal;
-    auto &&[fut, task_ptr] = detail::make_task(std::forward<Pred>(action));
-    retVal = std::move(fut);
+    auto task_ptr = detail::make_task(std::forward<Pred>(action));
+    std::future<void> retVal = task_ptr->notifier.get_future();
     {
       detail::SpinLockGuard guard{lock};
       this->TaskContainerT::push(std::move(task_ptr),

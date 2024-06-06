@@ -42,11 +42,11 @@ TEST_CASE("Single task completed notification", "[ThreadPool]") {
     CHECK_NOTHROW(fut.get());
   }
 
-  // SECTION("Single push and single wait, failure") {
-  //   auto fut = pool.push(throw_exc);
-  //   fut.wait();
-  //   CHECK_THROWS_AS(fut.get(), ExceptionTest);
-  // }
+  SECTION("Single push and single wait, failure") {
+    auto fut = pool.push(throw_exc);
+    fut.wait();
+    CHECK_THROWS_AS(fut.get(), ExceptionTest);
+  }
 }
 
 /*
