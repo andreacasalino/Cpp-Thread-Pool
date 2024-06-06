@@ -40,9 +40,10 @@ protected:
 
   void push(TaskPtr task) { tasks.emplace_back(std::move(task)); }
   TaskPtr pop() {
-    TaskPtr result = std::move(tasks.front());
-    tasks.pop_front();
-    return result;
+    return nullptr;
+    // TaskPtr result = std::move(tasks.front());
+    // tasks.pop_front();
+    // return result;
   }
 
   bool empty() const { return tasks.empty(); }
