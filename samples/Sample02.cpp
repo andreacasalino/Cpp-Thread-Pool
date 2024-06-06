@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <list>
 using namespace std;
 
 #define NUMBER_OF_ARRAYS 50
