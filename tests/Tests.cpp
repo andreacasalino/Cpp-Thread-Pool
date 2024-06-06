@@ -32,22 +32,22 @@ public:
 void throw_exc() { throw ExceptionTest{}; }
 } // namespace
 
-//TEST_CASE("Single task completed notification", "[ThreadPool]") {
-//  auto threads = GENERATE(1, 2, 3, 4);
-//  Fifo pool{static_cast<std::size_t>(threads)};
-//
-//  SECTION("Single push and single wait, success") {
-//    auto fut = pool.push(wait<500>);
-//    fut.wait();
-//    CHECK_NOTHROW(fut.get());
-//  }
-//
-//  SECTION("Single push and single wait, failure") {
-//    auto fut = pool.push(throw_exc);
-//    fut.wait();
-//    CHECK_THROWS_AS(fut.get(), ExceptionTest);
-//  }
-//}
+TEST_CASE("Single task completed notification", "[ThreadPool]") {
+  auto threads = GENERATE(1, 2, 3, 4);
+  Fifo pool{static_cast<std::size_t>(threads)};
+
+  SECTION("Single push and single wait, success") {
+    auto fut = pool.push(wait<500>);
+    fut.wait();
+    CHECK_NOTHROW(fut.get());
+  }
+
+  SECTION("Single push and single wait, failure") {
+    auto fut = pool.push(throw_exc);
+    fut.wait();
+    CHECK_THROWS_AS(fut.get(), ExceptionTest);
+  }
+}
 
 TEST_CASE("Multiple tasks completed notification", "[ThreadPool]") {
   auto threads = GENERATE(2, 4);
